@@ -9,12 +9,22 @@ exports.addSchool = (req, res) => {
         return res.status(400).json({ message: "All fields are required" });
     }
 
-    const query = "INSERT INTO schools (name, address, latitude, longitude) VALUES (?, ?, ?, ?)";
-    db.query(query, [name, address, latitude, longitude], (err, result) => {
+    // Check if school already exists
+    const checkQuery = "SELECT id FROM schools WHERE name = ? AND address = ?";
+    db.query(checkQuery, [name, address], (err, results) => {
         if (err) return res.status(500).json({ message: "Database error", error: err });
-        res.status(201).json({ message: "School added successfully", schoolId: result.insertId });
+        
+        if (results.length > 0) {
+            return res.status(409).json({ message: "School already exists" });
+        }
+
+        // If school doesn't exist, proceed with insertion
+        const insertQuery = "INSERT INTO schools (name, address, latitude, longitude) VALUES (?, ?, ?, ?)";
+        db.query(insertQuery, [name, address, latitude, longitude], (err, result) => {
+            if (err) return res.status(500).json({ message: "Database error", error: err });
+            res.status(201).json({ message: "School added successfully", schoolId: result.insertId });
+        });
     });
-    
 };
 
 // List Schools Sorted by Proximity
